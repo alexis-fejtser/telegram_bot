@@ -36,7 +36,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: 1288
           script: |
-            cd  /home/mrcoachb/telegramBOT
+            source /home/mrcoachb/nodevenv/telegramBOT/20/bin/activate && cd /home/mrcoachb/telegramBOT
             git pull origin master
             npm install --production
             pm2 restart tgbot
