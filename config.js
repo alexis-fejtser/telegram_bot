@@ -10,10 +10,10 @@ export const COMPRESSED_VIDEO_PATH = './ready_circle.mp4';
 
 export const SHOULD_COMPRESS_VIDEO_ON_START = false;
 
-export const STEP_TIMEOUT_MS = 60_000;
+export const STEP_TIMEOUT_MS = 86_400_000;
 
 // Первое сообщение шага отправляется сразу.
 // Все следующие сообщения внутри этого же шага — через эту задержку.
 export const STEP_DELAY_MS = 5_000;
 
-export const LEAD_NEXT_DELAY_MS  = 86_400_000;
+export const LEAD_NEXT_DELAY_MS  = 5_000;
