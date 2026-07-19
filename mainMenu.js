@@ -34,40 +34,22 @@ export function getMainReplyKeyboard() {
         .persistent();
 }
 
-/**
- * Показывает постоянную нижнюю кнопку.
- *
- * Telegram не позволяет прикрепить ReplyKeyboard и InlineKeyboard
- * к одному сообщению, поэтому клавиатура отправляется отдельным сообщением.
- */
-export async function showMainReplyKeyboard(ctx) {
-    return ctx.reply(
-        'Навигация 👇',
-        getMainReplyKeyboard()
-    );
-}
-
 export function registerSceneActions(botInstance) {
     for (const button of SCENE_BUTTONS) {
         botInstance.action(button.action, async (ctx) => {
             await ctx.answerCbQuery();
 
-            // Показываем нижнюю кнопку перед входом в ветку
-            await showMainReplyKeyboard(ctx);
-
             await ctx.scene.enter(button.scene, {
                 reset: true,
-                startIndex: 0,
             });
         });
     }
 }
 
 export async function showMainMenu(ctx) {
-    await showMainReplyKeyboard(ctx);
-
     await ctx.reply(
-        `Здесь всё о том, как найти новые смыслы, реализоваться и быть счастливой не только в роли "хорошая жена" и "счастливая мама".`
+        `Здесь всё о том, как найти новые смыслы, реализоваться и быть счастливой не только в роли "хорошая жена" и "счастливая мама".`,
+        getMainReplyKeyboard()
     );
 
     await ctx.reply(

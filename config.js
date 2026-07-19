@@ -17,3 +17,14 @@ export const STEP_TIMEOUT_MS = 86_400_000;
 export const STEP_DELAY_MS = 5_000;
 
 export const LEAD_NEXT_DELAY_MS  = 5_000;
+
+export const BOT_SETTINGS = {
+    replyKeyboard: {
+        enabled: true,
+        keyboard: [
+            ['🏠 Главное меню']
+        ],
+        resize_keyboard: true,
+        is_persistent: true,
+    }
+};

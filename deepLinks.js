@@ -1,5 +1,3 @@
-import { showMainReplyKeyboard } from './mainMenu.js';
-
 const SCENE_ALIASES = {
     first: 'first_scene',
     branch_first: 'first_scene',
@@ -87,10 +85,6 @@ export async function handleDeepLinkStart(ctx) {
     }
 
     delete ctx.session.pendingDeepLink;
-
-    // Вход по глубокой ссылке минует главное меню,
-    // поэтому отдельно показываем нижнюю кнопку.
-    await showMainReplyKeyboard(ctx);
 
     await ctx.scene.enter(deepLink.sceneId, {
         reset: true,

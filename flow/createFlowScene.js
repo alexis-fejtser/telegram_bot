@@ -1,13 +1,12 @@
 import { Scenes } from 'telegraf';
-import { showMainMenu, showMainReplyKeyboard } from '../mainMenu.js';
+import { showMainMenu } from '../mainMenu.js';
+import { BOT_SETTINGS } from '../config.js';
 
 import {
     LEAD_NEXT_DELAY_MS,
     STEP_DELAY_MS,
     STEP_TIMEOUT_MS,
 } from '../config.js';
-
-import { showMainMenu } from '../mainMenu.js';
 
 import {
     handleQuestionMessage,
@@ -136,25 +135,37 @@ async function enqueue(chatId, task) {
     return nextQueue;
 }
 
-function buildMessageOptions(message) {
+function buildMessageOptions(message, options) {
     const keyboard = message.keyboard || undefined;
     const caption = message.caption || message.text || '';
     const parseMode = message.parseMode || undefined;
+    const replyKeyboard =
+        options.isFirstMessage &&
+        BOT_SETTINGS.replyKeyboard.enabled
+            ? {
+                reply_markup: {
+                    keyboard: BOT_SETTINGS.replyKeyboard.keyboard,
+                    resize_keyboard: true,
+                    is_persistent: true,
+                }
+            }
+            : {};
 
     return {
         caption,
         parse_mode: parseMode,
         ...(keyboard || {}),
+        ...replyKeyboard,
     };
 }
 
-async function sendPhotoWithFallback(ctx, message) {
+async function sendPhotoWithFallback(ctx, message, options) {
     const key = getMediaKey(message);
 
     try {
         const response = await ctx.replyWithPhoto(
             getMediaSource(message, { preferCache: true }),
-            buildMessageOptions(message)
+            buildMessageOptions(message, options)
         );
 
         rememberTelegramFileId(message, response);
@@ -180,13 +191,13 @@ async function sendPhotoWithFallback(ctx, message) {
     }
 }
 
-async function sendVideoWithFallback(ctx, message) {
+async function sendVideoWithFallback(ctx, message, options) {
     const key = getMediaKey(message);
 
     try {
         const response = await ctx.replyWithVideo(
             getMediaSource(message, { preferCache: true }),
-            buildMessageOptions(message)
+            buildMessageOptions(message, options)
         );
 
         rememberTelegramFileId(message, response);
@@ -212,14 +223,26 @@ async function sendVideoWithFallback(ctx, message) {
     }
 }
 
-async function sendVideoNoteWithFallback(ctx, message) {
+async function sendVideoNoteWithFallback(ctx, message, options) {
     const key = getMediaKey(message);
     const keyboard = message.keyboard || undefined;
+    const replyKeyboard =
+        options.isFirstMessage &&
+        BOT_SETTINGS.replyKeyboard.enabled
+            ? {
+                reply_markup: {
+                    keyboard: BOT_SETTINGS.replyKeyboard.keyboard,
+                    resize_keyboard: true,
+                    is_persistent: true,
+                }
+            }
+            : {};
 
     try {
         const response = await ctx.replyWithVideoNote(
             getMediaSource(message, { preferCache: true }),
-            keyboard
+            keyboard,
+            replyKeyboard
         );
 
         rememberTelegramFileId(message, response);
@@ -245,8 +268,22 @@ async function sendVideoNoteWithFallback(ctx, message) {
     }
 }
 
-async function sendMessage(ctx, message) {
+async function sendMessage(ctx, message, options = {}) {
+
     const keyboard = message.keyboard || undefined;
+
+    const replyKeyboard =
+        options.isFirstMessage &&
+        BOT_SETTINGS.replyKeyboard.enabled
+            ? {
+                reply_markup: {
+                    keyboard: BOT_SETTINGS.replyKeyboard.keyboard,
+                    resize_keyboard: true,
+                    is_persistent: true,
+                }
+            }
+            : {};
+
     const parseMode = message.parseMode || undefined;
 
     let response = null;
@@ -264,15 +301,15 @@ async function sendMessage(ctx, message) {
             break;
 
         case 'photo':
-            response = await sendPhotoWithFallback(ctx, message);
+            response = await sendPhotoWithFallback(ctx, message, options);
             break;
 
         case 'video':
-            response = await sendVideoWithFallback(ctx, message);
+            response = await sendVideoWithFallback(ctx, message, options);
             break;
 
         case 'videoNote':
-            response = await sendVideoNoteWithFallback(ctx, message);
+            response = await sendVideoNoteWithFallback(ctx, message, options);
             break;
 
         case 'text':
@@ -281,6 +318,7 @@ async function sendMessage(ctx, message) {
                 {
                     parse_mode: parseMode,
                     ...(keyboard || {}),
+                    ...replyKeyboard,
                 }
             );
             break;
@@ -381,7 +419,9 @@ export function createFlowScene({ sceneId, steps }) {
                     return;
                 }
 
-                await sendMessage(ctx, message);
+                await sendMessage(ctx, message, {
+                    isFirstMessage: i === 0
+                });
             }
         });
 
@@ -492,8 +532,6 @@ export function createFlowScene({ sceneId, steps }) {
                 : 0;
 
         setFlowIndex(ctx, sceneId, initialIndex);
-
-        await showMainReplyKeyboard(ctx);
 
         return renderStep(ctx, initialIndex);
     });
