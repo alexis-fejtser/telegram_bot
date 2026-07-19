@@ -1,4 +1,5 @@
 import { Scenes } from 'telegraf';
+import { showMainMenu, showMainReplyKeyboard } from '../mainMenu.js';
 
 import {
     LEAD_NEXT_DELAY_MS,
@@ -491,6 +492,8 @@ export function createFlowScene({ sceneId, steps }) {
                 : 0;
 
         setFlowIndex(ctx, sceneId, initialIndex);
+
+        await showMainReplyKeyboard(ctx);
 
         return renderStep(ctx, initialIndex);
     });
