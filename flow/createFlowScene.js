@@ -41,6 +41,24 @@ function getFlowState(ctx, sceneId) {
     return ctx.session.flows[sceneId];
 }
 
+function normalizeStepIndex(index, maxIndex) {
+    const numericIndex = Number(index);
+
+    if (!Number.isFinite(numericIndex)) {
+        return 0;
+    }
+
+    if (numericIndex < 0) {
+        return 0;
+    }
+
+    if (numericIndex > maxIndex) {
+        return maxIndex;
+    }
+
+    return Math.floor(numericIndex);
+}
+
 function setFlowIndex(ctx, sceneId, index) {
     const state = getFlowState(ctx, sceneId);
     state.index = index;
@@ -312,9 +330,17 @@ export function createFlowScene({ sceneId, steps }) {
     }
 
     scene.enter(async (ctx) => {
-        const initialIndex = ctx.scene.state?.reset === false
-            ? getFlowState(ctx, sceneId).index || 0
-            : 0;
+        const maxIndex = Math.max(steps.length - 1, 0);
+
+        const startIndexFromDeepLink = ctx.scene.state?.startIndex;
+
+        const shouldUseDeepLinkIndex = startIndexFromDeepLink !== undefined;
+
+        const initialIndex = shouldUseDeepLinkIndex
+            ? normalizeStepIndex(startIndexFromDeepLink, maxIndex)
+            : ctx.scene.state?.reset === false
+                ? getFlowState(ctx, sceneId).index || 0
+                : 0;
 
         setFlowIndex(ctx, sceneId, initialIndex);
 
@@ -336,7 +362,7 @@ export function createFlowScene({ sceneId, steps }) {
 
         clearTimer(ctx.chat.id, sceneId);
 
-        const token = createRenderToken(ctx.chat.id, sceneId);
+        createRenderToken(ctx.chat.id, sceneId);
 
         return startQuestionFlow(ctx, sceneId, state.index || 0);
     });

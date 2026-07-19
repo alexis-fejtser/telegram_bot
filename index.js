@@ -109,6 +109,7 @@ bot.start(async (ctx) => {
             return ctx.scene.enter('thirty_scene'); // Проверьте точный ID в файле thirtyScene.js
         }
     }
+    
     await showMainMenu(ctx);
 });
 // Inline-кнопки выбора сцен из главного меню
