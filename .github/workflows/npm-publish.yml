@@ -37,6 +37,7 @@ jobs:
           port: 1288
           script: |
             source /home/mrcoachb/nodevenv/telegramBOT/20/bin/activate && cd /home/mrcoachb/telegramBOT
-            git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
             npm install --production
             pm2 restart tgbot
