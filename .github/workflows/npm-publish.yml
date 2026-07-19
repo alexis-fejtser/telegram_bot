@@ -40,4 +40,6 @@ jobs:
             git fetch origin master
             git reset --hard origin/master
             npm install --production
+            mkdir -p .cache
+            echo '{}' > .cache/telegram-file-ids.json
             pm2 restart tgbot
