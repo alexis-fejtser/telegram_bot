@@ -103,7 +103,7 @@ bot.start(async (ctx) => {
             return ctx.scene.enter('first_scene'); // ID, указанный внутри createFlowScene
         }
         if (payload === 'second_scene') {
-            return ctx.scene.enter('second_scene');
+            return ctx.scene.enter('second_scene'); //test
         }
         if (payload === 'thirty_scene') {
             return ctx.scene.enter('thirty_scene'); // Проверьте точный ID в файле thirtyScene.js
