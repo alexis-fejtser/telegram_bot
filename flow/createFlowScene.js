@@ -269,7 +269,7 @@ async function sendVideoNoteWithFallback(ctx, message, options) {
 }
 
 async function sendMessage(ctx, message, options = {}) {
-
+    console.log(options.isFirstMessage);
     const keyboard = message.keyboard || undefined;
 
     const replyKeyboard =
@@ -313,12 +313,16 @@ async function sendMessage(ctx, message, options = {}) {
             break;
 
         case 'text':
+            const replyMarkup = {
+                ...(keyboard?.reply_markup || {}),
+                ...(replyKeyboard?.reply_markup || {})
+            };
             response = await ctx.reply(
                 message.text,
                 {
                     parse_mode: parseMode,
-                    ...(keyboard || {}),
-                    ...replyKeyboard,
+                    ...(Object.keys(replyMarkup).length > 0 ? { reply_markup: replyMarkup } : {})
+
                 }
             );
             break;
@@ -420,7 +424,7 @@ export function createFlowScene({ sceneId, steps }) {
                 }
 
                 await sendMessage(ctx, message, {
-                    isFirstMessage: i === 0
+                    isFirstMessage: (index === 0) && (i === 0)
                 });
             }
         });

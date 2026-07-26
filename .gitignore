@@ -2,3 +2,4 @@ node_modules
 .env
 *.jpg
 *.mp4
+.cache/telegram-file-ids.json
