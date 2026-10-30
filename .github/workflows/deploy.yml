@@ -1,0 +1,114 @@
+name: Deploy Telegram Bot & Admin Panel
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch: # Позволяет запускать деплой вручную из вкладки Actions
+
+concurrency:
+  group: production_deploy
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Client & Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install backend dependencies (validate)
+        run: npm ci
+
+      - name: Install client dependencies & build React SPA
+        run: |
+          cd client
+          npm ci
+          npm run build
+
+      - name: Pack client dist archive
+        run: |
+          tar -czf client-dist.tar.gz -C client/dist .
+
+      - name: Upload client dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-dist-archive
+          path: client-dist.tar.gz
+          retention-days: 1
+
+  deploy:
+    name: Deploy to Virtual Hosting
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download client dist archive
+        uses: actions/download-artifact@v4
+        with:
+          name: client-dist-archive
+          path: .
+
+      - name: Update code & install dependencies on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 1288
+          script: |
+            source /home/mrcoachb/nodevenv/telegramBOT/20/bin/activate && cd /home/mrcoachb/telegramBOT
+            git fetch origin master
+            git reset --hard origin/master
+            
+            # Устанавливаем только production-зависимости бэкенда (без тяжелых devDependencies)
+            npm install --omit=dev
+            
+            # Создаем системные директории, если их ещё нет
+            mkdir -p .cache uploads client/dist
+            
+            # ВАЖНО: не затираем существующий кэш telegram file_id при каждом деплое!
+            # Создаем пустой JSON только если файл отсутствует:
+            [ -f .cache/telegram-file-ids.json ] || echo '{}' > .cache/telegram-file-ids.json
+
+      - name: Upload client dist archive to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 1288
+          source: "client-dist.tar.gz"
+          target: "/home/mrcoachb/telegramBOT"
+
+      - name: Unpack client & restart PM2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 1288
+          script: |
+            source /home/mrcoachb/nodevenv/telegramBOT/20/bin/activate && cd /home/mrcoachb/telegramBOT
+            
+            # Распаковываем свежий билд React-панели в client/dist и удаляем архив
+            tar -xzf client-dist.tar.gz -C client/dist && rm -f client-dist.tar.gz
+            
+            # Связываем client/dist с public_html/tgbot (для прямого доступа через веб-сервер при необходимости)
+            if [ -d "/home/mrcoachb/public_html" ]; then
+              ln -sfn /home/mrcoachb/telegramBOT/client/dist /home/mrcoachb/public_html/tgbot
+            fi
+            
+            # Перезапуск бота через ecosystem config или напрямую по имени
+            if [ -f ecosystem.config.cjs ]; then
+              pm2 startOrReload ecosystem.config.cjs
+            else
+              pm2 restart tgbot || pm2 start src/index.js --name tgbot
+            fi
+            pm2 save

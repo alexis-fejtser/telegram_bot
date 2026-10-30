@@ -1,5 +1,13 @@
-node_modules
+node_modules/
+client/node_modules/
+client/dist/
 .env
-*.jpg
-*.mp4
-.cache/telegram-file-ids.json
+.env.*
+!.env.example
+logs/
+.cache/
+uploads/*
+!uploads/.gitkeep
+*.log
+.DS_Store
+Thumbs.db
